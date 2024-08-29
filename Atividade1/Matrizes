@@ -1,0 +1,36 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct{
+    int largura;
+    int altura;
+}matriz;
+
+int main() {
+    int i, j, soma = 0, n;
+    matriz *m;
+    
+    m = malloc(sizeof(matriz));
+    
+    printf("Insira o tamanho da matriz:\n");
+    scanf("%d", &n);
+    
+    m->largura = n;
+    m->altura = n;
+    
+    int matrizDin[m->largura][m->altura];
+    
+    printf("Insira os elementos da matriz:\n");
+    for (i = 0; i < m->altura; i++) {
+        for (j = 0; j < m->largura; j++) {
+            scanf("%d", &matrizDin[i][j]);
+            if (i == j) {
+                soma += matrizDin[i][j];
+            }
+        }
+    }
+
+    printf("Soma dos elementos da diagonal principal: %d\n", soma);
+    return 0;
+}

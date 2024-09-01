@@ -15,87 +15,78 @@ ApontadorElemento base;
 int push (int dado) {
     ApontadorElemento q, r;
     Elemento elemento;
-
+    
     elemento.dado = dado;
-
+    
     q = (ApontadorElemento) malloc( sizeof (elemento) );
+    
+    q->dado = elemento.dado;
 
     if (base == NULL){
-        if (q == NULL) {
-            return (-1);
-        }
-        else {
-            q->dado = elemento.dado;
-
-            if (base == NULL) {
-                q->prox = NULL;
-            }
-            else{
-                q->prox = base;
-            }
-            base = q;
-            return (0);
-        }
+        base = q;
+        base->prox = NULL;
+        return (0);
+        
     }
     else{
-        if (q == NULL) {
-            return (-1);
+        r = base;
+        while (r->prox != NULL) {
+            r = r->prox;
         }
-            else{
-            q->dado = elemento.dado;
-            q->prox = NULL;
-            r = base;
-            while (r->prox != NULL) {
-                r = r->prox;
-            }
-            r->prox = q;
-            return (0);
+        
+        r->prox = q;
+        q->prox = NULL;
+        return (0);
         }
     }
-}
+
 
 
 int pop() {
-    ApontadorElemento r, q;
+    ApontadorElemento r,q;
     r = base;
+    q = r;
     int retorno;
-
+    
     while(r->prox != NULL){
         q = r;
         r = r->prox;
     }
     
-    if(q != NULL){
-        q->prox = NULL;
-    }
-
     retorno = r->dado;
-    r = NULL;
     free(r);
-
+    
+    q->prox = NULL;
+    
     return retorno;
 }
 
 int top() {
     ApontadorElemento r;
     r = base;
-
-    while(r->prox != NULL){
-        r = r->prox;
+    
+    if(base == NULL){
+        printf("Pilha vazia\n");
+        return -1;
+    }else{
+        while(r->prox != NULL){
+            r = r->prox;
+        }
+        
+        return r->dado;
     }
-
-    return r->dado;
 }
 
 void imprimir() {
     ApontadorElemento r;
     r = base;
-
+    
     printf("Conteúdo da pilha:\n");
-    while(r != NULL){
+    do{
         printf("%d ", r->dado);
         r = r->prox;
-    }
+    }while(r != NULL);
+    
     printf("\n");
 }
 

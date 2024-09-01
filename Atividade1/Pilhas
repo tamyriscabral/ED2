@@ -90,6 +90,12 @@ void imprimir() {
     printf("\n");
 }
 
+void verificar(){
+    if(base == NULL){
+        printf("Pilha vazia\n");
+    }
+}
+
 int main() {
     push(10);
     push(20);

@@ -1,0 +1,321 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define TAMANHO_HASH 10
+#define emPromocao 1
+#define precoNormal 0
+
+typedef struct Produto {
+    int id;               
+    char nome[20]; 
+    float preco;
+    int promocao;
+    int disponibilidade;
+} Produto;
+
+typedef struct {
+    Produto *tabela[TAMANHO_HASH]; 
+} TabelaHash;
+
+int funcao_hash(int id) {
+    return id % TAMANHO_HASH;  
+}
+
+int hash2(int id) {
+    return 7 - (id % 7);
+}
+
+int sondagem_linear(TabelaHash *tabela, int id) {
+    int indice = funcao_hash(id);
+    int tentativas = 0;
+
+    while (tabela->tabela[indice]!=NULL && tentativas < TAMANHO_HASH) {
+        indice = (indice + 1) % TAMANHO_HASH;
+        tentativas++;
+    }
+    return (tentativas < TAMANHO_HASH) ? indice : -1;
+}
+
+int sondagem_quadratica(TabelaHash *tabela, int id) {
+    int indice = funcao_hash(id);
+    int i = 1;
+    int tentativas = 0;
+
+    while (tabela->tabela[indice]!=NULL && tentativas < TAMANHO_HASH) {
+        indice = (funcao_hash(id) + i * i) % TAMANHO_HASH; 
+        i++;
+        tentativas++;
+    }
+
+    return (tentativas < TAMANHO_HASH) ? indice : -1;
+}
+
+int duplo_hashing(TabelaHash *tabela, int id) {
+    int indice = funcao_hash(id);
+    int step = hash2(id);
+    int tentativas = 0;
+
+    while (tabela->tabela[indice]!=NULL && tentativas < TAMANHO_HASH) {
+        indice = (indice + step) % TAMANHO_HASH; 
+        tentativas++;
+    }
+
+    return (tentativas < TAMANHO_HASH) ? indice : -1;
+}
+
+Produto *criarProduto(int id, const char *nome, float preco, int promocao, int disponibilidade) {
+    
+    Produto *novo_produto = (Produto *)malloc(sizeof(Produto));
+    if (novo_produto == NULL) {
+        printf("Erro ao alocar memória!\n");
+        exit(1);
+    }
+    
+    novo_produto->id = id;
+    strcpy(novo_produto->nome, nome);
+    novo_produto->preco = preco;
+    novo_produto->promocao = promocao;
+    novo_produto->disponibilidade = disponibilidade;
+    return novo_produto;
+}
+
+void inserir_linear(TabelaHash *tabela, Produto *produto) {
+    int indice = funcao_hash(produto->id);
+
+    if (tabela->tabela[indice]==NULL) {
+        tabela->tabela[indice] = produto;
+    } else {
+        
+        int novo_indice = sondagem_linear(tabela, produto->id);
+        
+        if (novo_indice != -1) {
+            tabela->tabela[novo_indice] = produto;
+        } else {
+            printf("Erro: Tabela hash está cheia.\n");
+        }
+    }
+}
+
+void inserir_quadratica(TabelaHash *tabela, Produto *produto) {
+    int indice = funcao_hash(produto->id);
+
+    if (tabela->tabela[indice]==NULL) {
+        tabela->tabela[indice] = produto;
+    } else {
+        
+        int novo_indice = sondagem_quadratica(tabela, produto->id);
+        if (novo_indice != -1) {
+            tabela->tabela[novo_indice] = produto;
+        } else {
+            printf("Erro: Tabela hash está cheia.\n");
+        }
+    }
+}
+
+void inserir_duplo_hashing(TabelaHash *tabela, Produto *produto) {
+    int indice = funcao_hash(produto->id);
+
+    if (tabela->tabela[indice]==NULL) {
+        tabela->tabela[indice] = produto;
+    } else {
+        int novo_indice = duplo_hashing(tabela, produto->id);
+        if (novo_indice != -1) {
+            tabela->tabela[novo_indice] = produto;
+        } else {
+            printf("Erro: Tabela hash está cheia.\n");
+        }
+    }
+}
+
+int buscar(TabelaHash *tabela, int id) {
+    int i;
+    
+    for(i=0; i<TAMANHO_HASH; i++){
+        if(tabela->tabela[i]!=NULL && tabela->tabela[i]->id == id){
+            printf("Produto encontrado: ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n", 
+                    tabela->tabela[i]->id,
+                    tabela->tabela[i]->nome,
+                    tabela->tabela[i]->preco,
+                    tabela->tabela[i]->disponibilidade);
+            return i;
+        }
+    }
+    printf("Produto não encontrado. Busca falhou!\n");
+    return -1;
+    
+}
+void verificar_promocao(TabelaHash *tabela) {
+    printf("\nProdutos em promoção:\n");
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        if (tabela->tabela[i] != NULL && tabela->tabela[i]->promocao == emPromocao) {
+            printf("Produto ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   tabela->tabela[i]->id,
+                   tabela->tabela[i]->nome,
+                   tabela->tabela[i]->preco,
+                   tabela->tabela[i]->disponibilidade);
+        }
+    }
+}
+
+void exibir_todas(TabelaHash *tabela) {
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        if(tabela->tabela[i]!=NULL){
+            printf("Produto ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   tabela->tabela[i]->id,
+                   tabela->tabela[i]->nome,
+                   tabela->tabela[i]->preco,
+                   tabela->tabela[i]->disponibilidade);
+        }
+    }
+}
+
+void remover(TabelaHash *tabela, int id){
+    int i, k=-1;
+    
+    for(i=0; i<TAMANHO_HASH; i++){
+        if(tabela->tabela[i]!=NULL && tabela->tabela[i]->id == id){
+            k = i;
+            break;
+        }
+    }
+    
+    if(k==-1){
+        printf("Produto não encontrado. Remoção falhou!\n");
+    }else{
+        printf("Produto removido: ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   tabela->tabela[k]->id,
+                   tabela->tabela[k]->nome,
+                   tabela->tabela[k]->preco,
+                   tabela->tabela[k]->disponibilidade);
+        tabela->tabela[k]=NULL;
+    }
+}
+
+void inserirDadosLinear(TabelaHash *tabela) {
+    
+    inserir_linear(tabela, criarProduto(1010, "Geladeira", 3000.00 , precoNormal, 50));
+    inserir_linear(tabela, criarProduto(2157, "Notebook", 4500.00, emPromocao, 35));
+    inserir_linear(tabela, criarProduto(4682, "Secador", 300.00, emPromocao, 70));
+    inserir_linear(tabela, criarProduto(7659, "Relógio", 150.00, precoNormal, 110));
+    inserir_linear(tabela, criarProduto(5467, "Fogão", 2500.00 , precoNormal, 120));
+    //inserir_linear(tabela, criarProduto(6248, "Celular", 2750.00 , emPromocao, 250));
+    inserir_linear(tabela, criarProduto(6320, "Televisão", 4599.00 , precoNormal, 105));
+    inserir_linear(tabela, criarProduto(5620, "Sofá", 3500.00 , emPromocao, 150));
+    inserir_linear(tabela, criarProduto(5639, "Mesa", 1520.00 , emPromocao, 220));
+    //inserir_linear(tabela, criarProduto(5781, "Panela", 80.00 , emPromocao, 450));
+    inserir_linear(tabela, criarProduto(2682, "Ventilador", 200.00 , precoNormal, 100));
+    //inserir_linear(tabela, criarProduto(4693, "Computador", 5000.00 , precoNormal, 64));
+    //inserir_linear(tabela, criarProduto(6255, "Cadeira", 100.00 , precoNormal, 200));
+    inserir_linear(tabela, criarProduto(1250, "Fritadeira", 500.00 , emPromocao, 106));
+
+    printf("Produtos foram inseridos com sucesso.\n");
+}
+
+void inserirDadosQuadratica(TabelaHash *tabela) {
+    
+    inserir_quadratica(tabela, criarProduto(1010, "Geladeira", 3000.00 , precoNormal, 50));
+    inserir_quadratica(tabela, criarProduto(2157, "Notebook", 4500.00, emPromocao, 35));
+    inserir_quadratica(tabela, criarProduto(4682, "Secador", 300.00, emPromocao, 70));
+    inserir_quadratica(tabela, criarProduto(7659, "Relógio", 150.00, precoNormal, 110));
+    inserir_quadratica(tabela, criarProduto(5467, "Fogão", 2500.00 , precoNormal, 120));
+    //inserir_quadratica(tabela, criarProduto(6248, "Celular", 2750.00 , emPromocao, 250));
+    inserir_quadratica(tabela, criarProduto(6320, "Televisão", 4599.00 , precoNormal, 105));
+    inserir_quadratica(tabela, criarProduto(5620, "Sofá", 3500.00 , emPromocao, 150));
+    inserir_quadratica(tabela, criarProduto(5639, "Mesa", 1520.00 , emPromocao, 220));
+    //inserir_quadratica(tabela, criarProduto(5781, "Panela", 80.00 , emPromocao, 450));
+    inserir_quadratica(tabela, criarProduto(2682, "Ventilador", 200.00 , precoNormal, 100));
+    //inserir_quadratica(tabela, criarProduto(4693, "Computador", 5000.00 , precoNormal, 64));
+    //inserir_quadratica(tabela, criarProduto(6255, "Cadeira", 100.00 , precoNormal, 200));
+    inserir_quadratica(tabela, criarProduto(1250, "Fritadeira", 500.00 , emPromocao, 106));
+    
+    printf("Produtos foram inseridos com sucesso.\n");
+}
+
+void inserirDadosDuploHashing(TabelaHash *tabela) {
+    
+    inserir_duplo_hashing(tabela, criarProduto(1010, "Geladeira", 3000.00 , precoNormal, 50));
+    inserir_duplo_hashing(tabela, criarProduto(2157, "Notebook", 4500.00, emPromocao, 35));
+    inserir_duplo_hashing(tabela, criarProduto(4682, "Secador", 300.00, emPromocao, 70));
+    inserir_duplo_hashing(tabela, criarProduto(7659, "Relógio", 150.00, precoNormal, 110));
+    inserir_duplo_hashing(tabela, criarProduto(5467, "Fogão", 2500.00 , precoNormal, 120));
+   // inserir_duplo_hashing(tabela, criarProduto(6248, "Celular", 2750.00 , emPromocao, 250));
+    inserir_duplo_hashing(tabela, criarProduto(6320, "Televisão", 4599.00 , precoNormal, 105));
+    inserir_duplo_hashing(tabela, criarProduto(5620, "Sofá", 3500.00 , emPromocao, 150));
+    inserir_duplo_hashing(tabela, criarProduto(5639, "Mesa", 1520.00 , emPromocao, 220));
+    //inserir_duplo_hashing(tabela, criarProduto(5781, "Panela", 80.00 , emPromocao, 450));
+    inserir_duplo_hashing(tabela, criarProduto(2682, "Ventilador", 200.00 , precoNormal, 100));
+    //inserir_duplo_hashing(tabela, criarProduto(4693, "Computador", 5000.00 , precoNormal, 64));
+    //inserir_duplo_hashing(tabela, criarProduto(6255, "Cadeira", 100.00 , precoNormal, 200));
+    inserir_duplo_hashing(tabela, criarProduto(1250, "Fritadeira", 500.00 , emPromocao, 106));
+
+    printf("Produtos foram inseridos com sucesso.\n");
+}
+
+void compra(TabelaHash *tabela, int id, int quant){
+    int i, k=-1;
+    
+    for(i=0; i<TAMANHO_HASH; i++){
+        if(tabela->tabela[i]!=NULL && tabela->tabela[i]->id == id){
+            k = i;
+            break;
+        }
+    }
+    
+    if(k==-1){
+        printf("Produto não encontrado. Compra falhou!\n");
+    }else{
+        if(tabela->tabela[k]->disponibilidade==0){
+            printf("Estoque indisponível. Compra não realizada.\n");
+        }else{
+            
+            tabela->tabela[k]->disponibilidade = tabela->tabela[k]->disponibilidade - quant;
+            printf("Compra realizada: %s\n", tabela->tabela[k]->nome);
+        }
+    }
+}
+
+int contar_elementos(TabelaHash *tabela) {
+    int total = 0;
+
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        if(tabela->tabela[i]!=NULL){
+            total++;
+        }
+    }
+
+    return total;
+}
+
+int main() {
+    TabelaHash tabela_linear = {0}; 
+    TabelaHash tabela_quadratica = {0}; 
+    TabelaHash tabela_duplo_hashing = {0}; 
+
+
+    
+    printf("\nInserção com Sondagem Linear:\n");
+    inserirDadosLinear(&tabela_linear);
+    exibir_todas(&tabela_linear);
+    
+    
+    printf("\n\n");
+    
+    printf("\nInserção com Sondagem Quadrática:\n");
+    inserirDadosQuadratica(&tabela_quadratica);
+    exibir_todas(&tabela_quadratica);
+    
+    printf("\n\n");
+    
+    printf("\nInserção com Duplo Hashing:\n");
+    inserirDadosDuploHashing(&tabela_duplo_hashing);
+    exibir_todas(&tabela_duplo_hashing);
+    
+    printf("\n\n");
+    
+    buscar(&tabela_quadratica, 7659);
+    remover(&tabela_quadratica, 7659);
+    buscar(&tabela_quadratica, 7659);
+    
+    return 0;
+}

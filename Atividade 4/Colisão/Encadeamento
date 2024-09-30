@@ -1,0 +1,200 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define TAMANHO_HASH 10
+#define emPromocao 1
+#define precoNormal 0
+
+typedef struct Produto {
+     int id;               
+    char nome[20]; 
+    float preco;
+    int promocao;
+    int disponibilidade;      
+    struct Produto *proximo; 
+} Produto;
+
+typedef struct {
+    Produto *tabela[TAMANHO_HASH]; 
+} TabelaHash;
+
+int funcao_hash(int id) {
+    return id % TAMANHO_HASH;  
+}
+
+Produto *criarProduto(int id, const char *nome, float preco, int promocao, int disponibilidade) {
+    
+    Produto *novo_produto = (Produto *)malloc(sizeof(Produto));
+    if (novo_produto == NULL) {
+        printf("Erro ao alocar memória!\n");
+        exit(1);
+    }
+    
+    novo_produto->id = id;
+    strcpy(novo_produto->nome, nome);
+    novo_produto->preco = preco;
+    novo_produto->promocao = promocao;
+    novo_produto->disponibilidade = disponibilidade;
+    novo_produto->proximo = NULL;
+    
+    return novo_produto;
+}
+
+void inserir(TabelaHash *tabela, Produto *produto) {
+    int indice = funcao_hash(produto->id);  
+    produto->proximo = tabela->tabela[indice];
+    tabela->tabela[indice] = produto;
+}
+
+void buscar(TabelaHash *tabela, int id) {
+    int indice = funcao_hash(id); 
+    
+    Produto *atual = tabela->tabela[indice];
+    
+    while(atual!=NULL){
+        if(atual->id == id){
+            printf("Produto encontrado:\nID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   atual->id,
+                   atual->nome,
+                   atual->preco,
+                   atual->disponibilidade);
+            return;
+        }
+        atual = atual->proximo;
+    }
+    printf("Produto não encontrado\n");
+}
+
+void verificar_promocao(TabelaHash *tabela) {
+    printf("\nProdutos em promoção:\n");
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        if (tabela->tabela[i] != NULL && tabela->tabela[i]->promocao == emPromocao) {
+            printf("Produto ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   tabela->tabela[i]->id,
+                   tabela->tabela[i]->nome,
+                   tabela->tabela[i]->preco,
+                   tabela->tabela[i]->disponibilidade);
+        }
+    }
+}
+
+void exibir_todas(TabelaHash *tabela) {
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        Produto *atual = tabela->tabela[i];
+        while (atual != NULL) {
+            printf("Produto ID: %d, Nome: %s, Preço: %.2f, Disponibilidade: %d\n",
+                   atual->id,
+                   atual->nome,
+                   atual->preco,
+                   atual->disponibilidade);
+            atual = atual->proximo; 
+        }
+    }
+    
+    printf("\n");
+}
+
+void remover(TabelaHash *tabela, int id){
+    int indice = funcao_hash(id); 
+    Produto *atual = tabela->tabela[indice];
+    Produto *anterior = NULL;
+
+
+    while (atual != NULL) {
+        if (atual->id == id) {
+            
+            if (anterior == NULL) {
+                tabela->tabela[indice] = atual->proximo;
+            } else {
+                anterior->proximo = atual->proximo; 
+            }
+            printf("Produto com ID %d foi excluído.\n", id);
+            free(atual);
+            return;
+        }
+        anterior = atual;
+        atual = atual->proximo;
+    }
+    printf("Produto com ID %d não encontrado para exclusão.\n", id);
+}
+
+void inserir_dados_predefinidos(TabelaHash *tabela) {
+    
+    inserir(tabela, criarProduto(1010, "Geladeira", 3000.00 , precoNormal, 50));
+    inserir(tabela, criarProduto(2157, "Notebook", 4500.00, emPromocao, 35));
+    inserir(tabela, criarProduto(4682, "Secador", 300.00, emPromocao, 70));
+    inserir(tabela, criarProduto(7659, "Relógio", 150.00, precoNormal, 110));
+    inserir(tabela, criarProduto(5467, "Fogão", 2500.00 , precoNormal, 120));
+    inserir(tabela, criarProduto(6248, "Celular", 2750.00 , emPromocao, 250));
+    inserir(tabela, criarProduto(6324, "Televisão", 4599.00 , precoNormal, 105));
+    inserir(tabela, criarProduto(5620, "Sofá", 3500.00 , emPromocao, 150));
+    inserir(tabela, criarProduto(5639, "Mesa", 1520.00 , emPromocao, 220));
+
+    printf("Produtos foram inseridos com sucesso.\n");
+}
+
+void compra(TabelaHash *tabela, int id, int quant){
+    int indice = funcao_hash(id);
+    
+    Produto *atual = tabela->tabela[indice];
+    
+    while(atual!=NULL){
+        if(atual->id == id){
+            break;
+        }
+        atual = atual->proximo;
+    }
+    
+    if(atual!=NULL){
+        if(atual->disponibilidade > 0){
+           atual->disponibilidade = atual->disponibilidade - quant;
+            printf("Compra realizada: %s\n", atual->nome); 
+        }else{
+            printf("Estoque indisponível. Compra não realizada.\n");
+        }
+        
+    }else{
+        printf("Produto não encontrado. Compra falhou!\n");
+    }
+}
+
+
+int contar_elementos(TabelaHash *tabela) {
+    int total = 0;
+
+    for (int i = 0; i < TAMANHO_HASH; i++) {
+        Produto *atual = tabela->tabela[i];
+
+        while (atual != NULL) {
+            total++;  
+            atual = atual->proximo; 
+        }
+    }
+
+    return total;
+}
+
+int main() {
+    TabelaHash tabela = {NULL};
+
+    inserir_dados_predefinidos(&tabela);
+
+     printf("\nTodas os produtos inseridos: %d\n", contar_elementos(&tabela));
+    exibir_todas(&tabela);
+    
+    printf("\nBuscar um produto:\n");
+    buscar(&tabela, 1010);
+    
+    printf("\nProdutos excluidos:\n");
+    remover(&tabela, 2157);
+    
+     printf("\nProdutos Atualizadao: %d\n", contar_elementos(&tabela));
+    exibir_todas(&tabela);
+    
+    compra(&tabela, 1010, 3);
+    buscar(&tabela, 1010);
+    
+    
+    return 0;
+}

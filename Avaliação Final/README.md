@@ -42,3 +42,6 @@
     int generoFavorito;
   } Cliente;
 ```
+### Utilização
+
+O código mostrou-se capaz de criar listas com os livros cadastrados a partir do gênero escolhido pelo usuário, além de mostrar os livros com maiores avaliações e mais populares. Por fim, também é possível trocar o usuário utilizado sem necessidade de reiniciar a execuução do programa.

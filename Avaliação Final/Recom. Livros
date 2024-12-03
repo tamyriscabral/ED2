@@ -1,1 +1,656 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#define SUCESSO 0
+#define FALHA 1
+#define MAX 1000
+#define CHAVE_INVALIDA 0 
+#define TAMANHO_HASH 10
+
+
+//Estrutura da lista encadeada
+typedef struct Livros* ApontadorLivros;
+
+typedef struct Livros {
+    unsigned int id;
+    char nome[100];
+    char autor[50];
+    float nota;
+    unsigned int nAvaliacoes;
+    ApontadorLivros prox;
+} Livros;
+
+ApontadorLivros inicioLivros;
+
+//Estrutura da árvore binária
+typedef struct Node{
+    unsigned int id;
+    struct Node *esquerda;
+    struct Node *direita;
+    ApontadorLivros posicaoLivros;
+}Node;
+
+//Estrutura tabela hash
+typedef struct Cliente{
+    int matricula;               
+    char nome[20]; 
+    int generoFavorito;
+} Cliente;
+
+
+//Funções para a lista encadeada
+int CriarLivrosVazia() {
+    inicioLivros = NULL;
+    return (SUCESSO);
+}
+
+Livros ReceberLivros (int id, char *nome, char *autor, float nota, unsigned int nAvaliacoes) {
+    Livros livro;
+
+    livro.id = id;
+    livro.nota = nota;
+    livro.nAvaliacoes = nAvaliacoes;
+    strcpy (livro.nome, nome);
+    strcpy (livro.autor, autor);
+
+    return(livro);
+}
+
+int InsInicio (Livros livro) {
+    ApontadorLivros q,r;
+    q = (ApontadorLivros) malloc( sizeof (livro) );
+
+    if (q == NULL) {
+        return (FALHA);
+    }
+    else {
+        q->id = livro.id;
+        q->nota = livro.nota;
+        q-> nAvaliacoes = livro.nAvaliacoes;
+        strcpy (q->nome, livro.nome);
+        strcpy (q->autor, livro.autor);
+
+        if (inicioLivros == NULL) {
+            q->prox = NULL;
+        }
+        else{
+            q->prox = inicioLivros;
+        }
+        inicioLivros = q;
+        return (SUCESSO);
+    }
+}
+
+int InsFinal (Livros livro) {
+    ApontadorLivros q, r;
+
+    if (inicioLivros == NULL){
+        return (InsInicio (livro));
+    }
+    else{
+        q = (ApontadorLivros) malloc( sizeof (Livros) );
+        if (q == NULL) {
+            return (FALHA);
+        }
+            else{
+            q->id = livro.id;
+            q->nota = livro.nota;
+            q-> nAvaliacoes = livro.nAvaliacoes;
+            strcpy (q->nome, livro.nome);
+            strcpy (q->autor, livro.autor);
+
+            q->prox = NULL;
+            r = inicioLivros;
+            while (r->prox != NULL) {
+                r = r->prox;
+            }
+            r->prox = q;
+            return (SUCESSO);
+        }
+    }
+}
+
+ApontadorLivros encontrarLivro(int id){
+    ApontadorLivros r;
+    r = inicioLivros;
+
+    while(r->id != id){
+        r = r->prox;
+    }
+
+    return r;
+}
+
+//Funções para a árvore
+Node* criarArvore(int id, ApontadorLivros endereco) {
+    Node* raiz=(Node *)malloc(sizeof (Node));
+    raiz->id = id;
+    raiz->posicaoLivros = endereco;
+    return raiz;
+}
+
+void inserirNoArvore(Node *raiz, int id, ApontadorLivros endereco){
+   Node *y, *novo;
+   y = NULL;
+
+    while (raiz != NULL){ 
+        y = raiz;
+        if (id < raiz-> id)
+            raiz = raiz-> esquerda;
+        else
+            raiz = raiz -> direita;
+    }
+
+    if (y == NULL){
+        criarArvore(id, endereco);
+    }else{
+        novo = (Node*)malloc(sizeof (Node));
+        novo -> id = id;
+        novo -> posicaoLivros = endereco;
+        novo -> esquerda = NULL;
+        novo -> direita = NULL;
+        if (id < y->id){
+            y -> esquerda = novo;
+        }else{
+            y -> direita = novo;
+        }
+    }
+
+}
+
+int removerNoArvore(Node* raiz, int id){
+    Node *no, *aux, *subst, *prev, *aux2;
+    int k=0, s;
+    no = raiz;
+
+    while(no != NULL && no->id!=id){
+        if(id < no->id){
+            aux = no;
+            k=1;
+            no = no->esquerda;
+        }else{
+            aux = no;
+            k=2;
+            no = no->direita;
+        }
+    }
+
+    if(no == NULL){
+        return FALHA;
+    }else{
+
+        if(no->esquerda == NULL && no->direita == NULL){
+            if(k==1){
+                aux -> esquerda = NULL;
+            }else if(k==2){
+                aux -> direita = NULL;
+            }else{
+                raiz = NULL;
+            }
+            free(no);
+        }else if(no->esquerda == NULL && no->direita !=NULL){
+            if(k==1){
+                aux->esquerda = no -> direita;
+            }else if(k==2){
+                aux->direita = no ->direita;
+            }else{
+                raiz = no ->direita;
+            }
+            free(no);
+        }else if(no->esquerda != NULL && no->direita ==NULL){
+            if(k==1){
+                aux->esquerda = no -> esquerda;
+            }else if(k==2){
+                aux->direita = no ->esquerda;
+            }else{
+                raiz = no ->esquerda;
+            }
+            free(no);
+        }else{
+            subst = no->direita; 
+            while(subst->esquerda != NULL){
+                subst = subst->esquerda; 
+            }
+            
+            s = subst->id;
+            removerNoArvore(raiz, subst->id);
+            no->id = s;
+
+        }
+
+
+        return SUCESSO;
+    }
+}
+
+void listarArvoreOrdem(Node *raiz){
+    if(raiz != NULL){
+        listarArvoreOrdem(raiz->esquerda);
+        printf(" %i", raiz->id);
+        listarArvoreOrdem(raiz->direita);
+    }
+}
+
+void listarArvoreOrdemInversa(Node *raiz){
+    if(raiz != NULL){
+        listarArvoreOrdemInversa(raiz->direita);
+        if(raiz->posicaoLivros->nAvaliacoes > 7000){
+            printf("Nome: %s\nAutor: %s\nNota: %.2f\nNúmero de Avaliações: %d\n\n", 
+            raiz->posicaoLivros->nome, raiz->posicaoLivros->autor, raiz->posicaoLivros->nota, raiz->posicaoLivros->nAvaliacoes);
+        }else{
+            return;
+        }
+        listarArvoreOrdemInversa(raiz->esquerda);
+    }
+}
+
+
+//Funções para tabela hash
+typedef struct {
+    Cliente *tabela[TAMANHO_HASH]; 
+} TabelaHash;
+
+int funcao_hash(int id) {
+    return id % TAMANHO_HASH;  
+}
+
+void inserir(TabelaHash *tabela, Cliente *cliente) {
+    int indice = funcao_hash(cliente->matricula);  
+    tabela->tabela[indice] = cliente;  
+}
+
+
+Cliente *buscar(TabelaHash *tabela, int matricula) {
+    int indice = funcao_hash(matricula); 
+    return tabela->tabela[indice]; 
+}
+
+//Função para adicionar livros
+Node* criarLivros(){
+    Livros livro;
+    ApontadorLivros endereco;
+    Node *raiz;
+  
+    /* Categorias dos livros por ID:
+    Administração e Negócios = 0000 a 0999
+    Autoajuda = 1000 a 1999
+    Biografias = 2000 a 2999
+    Engenharias = 3000 a 3999
+    Gastronomia = 4000 a 4999
+    Infantis = 5000 a 5999
+    Política = 6000 a 6999
+    Suspense e Mistério = 7000 a 7999
+    Religião = 8000 a 8999
+    Romance = 9000 a 9999
+    */ 
+    
+    
+    //Administração
+    livro = ReceberLivros(54,"A psicologia financeira", "Morgan Housel", 4.8, 18181);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    raiz = criarArvore(livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(267,"Gatilhos Mentais", "Gustavo Ferreira", 4.6, 14881);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(952,"O Príncipe", "Nicolau Maquiavel", 4.8, 6449);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Autoajuda
+    livro = ReceberLivros(1167,"A coragem de não agradar", "Ichiro Kishimi", 4.7, 12988);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(1648,"Nada pode me ferir", "David Goggins", 4.8, 6444);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(1351,"O milagre da manhã", " Hal Elrod", 4.7, 32609);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Biografias
+    livro = ReceberLivros(2487,"Ainda estou aqui", " Marcelo Rubens Paiva", 4.7, 2345);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(2367,"O Diário de Anne Frank", "Anne Frank", 4.8, 3034);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(2648,"Em busca de mim", "Viola Davis", 4.8, 12708);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Engenharias
+    livro = ReceberLivros(3157,"Arquitetura Limpa", "Robert C. Martin", 4.9, 4416);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(3945,"Como o mundo funciona", "Vaclav Smil", 4.6, 100);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(3465,"Apaixone-se pelo problema, não pela solução", "Uri Levine", 4.7, 539);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Gastronomia
+    livro = ReceberLivros(4326,"Le Cordon Bleu", "Jeni Wright", 4.9, 1826);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(4697,"Ervas e especiarias", "Rita Lobo", 4.8, 66);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(4268,"O Guia Essencial do Vinho", "Madeline Puckette", 4.8, 2341);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Infantis
+    livro = ReceberLivros(5368,"Conhecendo os Sons da Fazenda", "Cristina Klein", 4.8, 4734);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(5627,"Onde Está a Bluey?", "On Line Editora", 4.8, 1126);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(5971,"Muito cansado e bem acordado", "Susanne Strasser", 4.8, 7567);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Política
+    livro = ReceberLivros(6972,"Mulheres que correm com os lobos", "Clarissa Pinkola Estés", 4.8, 35849);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(6175,"O pobre de direita", "Jessé Souza", 4.6, 310);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(6485,"O pacto da branquitude", "Cida Bento", 4.9, 4874);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Suspense e Mistério
+    livro = ReceberLivros(7467,"A paciente silenciosa", "Alex Michaelides", 4.7, 34338);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(7364,"Jantar secreto", "Raphael Montes", 4.7, 11862);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(7942,"Flores Partidas", "Karin Slaughter", 4.4, 3007);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Religião
+    livro = ReceberLivros(8426,"As Sete Linhas de Umbanda", "Rubens Saraceni", 4.8, 1027);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(8627,"O Livro Tibetano dos Mortos", "W. Y. Evans-Wentz", 4.8, 522);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(8895,"Israel x Palestina", "James L. Gelvin", 4.7, 147);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    //Romance
+    livro = ReceberLivros(9467,"Noites brancas", "Fiódor Dostoiévski", 4.6, 1179);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(9762,"Orgulho e preconceito", "Jane Austen", 4.7, 4902);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    livro = ReceberLivros(9347,"O morro dos ventos uivantes", "Emily Brontë", 4.7, 28852);
+    InsFinal(livro);
+    endereco = encontrarLivro(livro.id);
+    inserirNoArvore(raiz, livro.nAvaliacoes, endereco);
+    
+    return raiz;
+}
+
+//Função para criar clientes
+void criarClientes(TabelaHash *tabela){
+
+    // Allocate memory for each Cliente on the heap
+    Cliente *cliente1 = (Cliente *)malloc(sizeof(Cliente));
+    cliente1->matricula = 12345;
+    strcpy(cliente1->nome, "Maria");
+    cliente1->generoFavorito = 9;
+    inserir(tabela, cliente1);
+
+    Cliente *cliente2 = (Cliente *)malloc(sizeof(Cliente));
+    cliente2->matricula = 56586;
+    strcpy(cliente2->nome, "Pedro");
+    cliente2->generoFavorito = 7;
+    inserir(tabela, cliente2);
+
+    Cliente *cliente3 = (Cliente *)malloc(sizeof(Cliente));
+    cliente3->matricula = 84848;
+    strcpy(cliente3->nome, "Marcelo");
+    cliente3->generoFavorito = 0;
+    inserir(tabela, cliente3);
+
+    Cliente *cliente4 = (Cliente *)malloc(sizeof(Cliente));
+    cliente4->matricula = 26477;
+    strcpy(cliente4->nome, "Amanda");
+    cliente4->generoFavorito = 4;
+    inserir(tabela, cliente4);
+
+    Cliente *cliente5 = (Cliente *)malloc(sizeof(Cliente));
+    cliente5->matricula = 97123;
+    strcpy(cliente5->nome, "Denise");
+    cliente5->generoFavorito = 2;
+    inserir(tabela, cliente5);
+}
+
+
+//Função para recomendar de acordo com o gênero
+void recomendacoesGenero(int genero){
+    ApontadorLivros q;
+    
+    q = inicioLivros;
+    
+    while(q!= NULL){
+        if(q->id >= genero*1000 && q->id <(genero+1)*1000){
+            printf("Nome: %s\nAutor: %s\nNota: %.2f\nNúmero de Avaliações: %d\n\n", 
+            q->nome, q->autor, q->nota, q->nAvaliacoes);
+        }
+        q = q->prox;
+    }
+}
+
+//Função para imprimir os livros mais bem avaliados de cada gênero
+void bemAvaliados(){
+    int i;
+    Livros* melhores[10];
+    Livros* maior;
+    ApontadorLivros q = inicioLivros;
+    
+    for(i = 0; i<10000; i = i+1000){
+        maior = q;
+        while(q!= NULL && q->id < i+1000){
+            if(q->nota > maior->nota){
+                maior = q;
+            }
+            q = q->prox;
+        }
+        melhores[i/1000] = maior;
+    }
+    
+    for(i = 0; i<10; i++){
+        printf("%d - %s\n", i+1, melhores[i]->nome );
+    }
+}
+
+//Função que retorna o gênero favorito do cliente
+char* generoFavorito(Cliente* cliente){
+    int gen = cliente->generoFavorito;
+    
+    switch (gen){
+        case 0:
+            return "Administração e Negócios";
+        case 1:
+            return "Autoajuda";
+        case 2:
+            return "Biografias";
+        case 3:
+            return "Engenharias";
+        case 4:
+            return "Gastronomia";
+        case 5:
+            return "Infantis";
+        case 6:
+            return "Política";
+        case 7:
+            return "Suspense e Mistério";
+        case 8:
+            return "Religião";
+        case 9:
+            return "Romance";
+        default:
+            break;
+    }
+    
+}
+
+void alterarDados(Cliente* cliente,int opcao){
+    char nome[50];
+    int genero=0;
+    if(opcao == 1){
+        printf("Digite o novo nome: ");
+        scanf("%s", nome);
+        
+        strcpy(cliente->nome, nome);
+        
+        printf("Seu nome foi alterado para %s\n", nome);
+    }else if(opcao ==2){
+        do{
+            printf("Digite o código correspondente ao seu gênero favorito(se não souber, digite 99): ");
+            scanf("%d", &genero);
+            if(genero == 99){
+                printf("Administração e Negócios = 0\n"
+                        "Autoajuda = 1\n"
+                        "Biografias = 2\n"
+                        "Engenharias = 3\n"
+                        "Gastronomia = 4\n"
+                        "Infantis = 5\n"
+                        "Política = 6\n"
+                        "Suspense e Mistério = 7\n"
+                        "Religião = 8\n"
+                        "Romance = 9\n");
+            }else{
+                cliente->generoFavorito = genero;
+                printf("Seu gênero favorito foi alterado para %s\n", generoFavorito(cliente));
+            }
+        }while(genero == 99);
+    }
+}
+
+int main()
+{
+    Livros* livros = inicioLivros;
+    Node* raiz;
+    CriarLivrosVazia();
+    raiz = criarLivros();
+    int matricula, opcao, dado;
+    Cliente *cliente;
+    TabelaHash tabela = {NULL};
+    
+    criarClientes(&tabela);
+    
+    printf("Insira sua matrícula: ");
+    scanf("%d", &matricula);
+    
+    cliente = buscar(&tabela, matricula);
+    
+    
+    printf("Olá! Seja bem-vindo(a), %s! Selecione a ação desejada\n", cliente->nome);
+    
+    do{
+        printf("\n1- Verificar recomendações do seu gênero favorito\n"
+               "2- Verificar os mais bem avaliados de todos os gêneros\n"
+               "3- Verificar os livros mais populares\n"
+               "4- Alterar dados cadastrais\n"
+               "5- Entrar com outra matrícula\n"
+               "0 - Sair\n");
+        scanf("%d", &opcao);
+        
+        switch(opcao){
+            case 1: 
+                printf("Seu gênero favorito é: %s\n", generoFavorito(cliente));
+                recomendacoesGenero(cliente->generoFavorito);
+                break;
+                
+            case 2:
+                printf("Os livros mais bem avaliados em cada gênero são: \n");
+                bemAvaliados();
+                break;
+            case 3:
+                printf("Os livros mais populares são: \n");
+                listarArvoreOrdemInversa(raiz);
+                break;
+            
+            case 4:
+                printf("Qual dado deseja alterar?\n1- Nome\n2-Gênero favorito\n");
+                scanf("%d", &dado);
+                alterarDados(cliente, dado);
+                break;
+            
+            case 5:
+                printf("Insira sua matrícula: ");
+                scanf("%d", &matricula);
+                cliente = buscar(&tabela, matricula);
+                printf("Olá! Seja bem-vindo(a), %s! Selecione a ação desejada\n", cliente->nome);
+                break;
+            case 0:
+                break;
+            default:
+                printf("Entrada inválida\n");
+                break;
+        }
+    }while(opcao != 0);
+           
+    printf("Você saiu\n");
+
+}
